@@ -1,5 +1,6 @@
-// knight-min-move.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
+//Authored by: Tyler Watson
+//Date: 5/9/2023
+//Algorithms 2 Chess Homework
 
 #include <iostream>
 #include <queue>
