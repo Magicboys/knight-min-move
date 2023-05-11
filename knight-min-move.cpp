@@ -3,6 +3,7 @@
 //Algorithms 2 Chess Homework
 
 #include <iostream>
+#include <string>
 #include <queue>
 #include <list>
 
@@ -17,6 +18,9 @@ int goalPositionY;
 int knightStartingPositionX;
 int knightStartingPositionY;
 
+//List of reserved positions
+std::list<std::pair<int, int>> reservedPositions;
+
 //Method Headers
 void InitializeBoard();
 bool isLegal(int origX, int origY, int newX, int newY);
@@ -25,6 +29,34 @@ void PrintPaths(std::list<std::list<std::pair<int, int>>> paths);
 
 int main()
 {
+    while (true) {
+        std::cout << "Enter the location of a piece in the format \"X,Y\"" << std::endl;
+        std::cout << "Note: row and columns exist from (0,7) & to finish this process type \"exit\"" << std::endl;
+        std::string input;
+        std::getline(std::cin, input);
+        if (input == "exit") {
+            break;
+        }
+        if (input.length() != 3 || input.find(',') == std::string::npos) {
+            std::cout << "Invalid format, try again!" << std::endl;
+            std::cout << "==========================" << std::endl;
+        }
+        else {
+            int x = std::stoi(std::string(1, input[0]));
+            int y = std::stoi(std::string(1, input[2]));
+
+            if (x < 0 || x > 7 || y < 0 || y > 7) {
+                std::cout << "Invalid location, try again!" << std::endl;
+                std::cout << "==========================" << std::endl;
+            }
+            else {
+                std::cout << "Reserved the location of: " <<  x << "," << y << std::endl;
+                std::cout << "==========================" << std::endl;
+                reservedPositions.push_back({ x,y });
+            }
+        }
+    }
+
     InitializeBoard();
 
     std::list<std::pair<std::pair<int, int>, std::pair<int, int>>> moves;
@@ -32,9 +64,20 @@ int main()
     std::queue<std::pair<int, int>> positionsToExpand;
     for (int i = 0; i < 8; i++) {
         for (int k = 0; k < 8; k++) {
-            if (board[i][k] && (knightStartingPositionX != i && knightStartingPositionY != k)) {
-                positionsToExpand.push({ i, k });
-                moves.push_back({ {knightStartingPositionY, knightStartingPositionX}, {i, k} });
+            bool verifyNotReserved = true;
+            
+            for (auto j = reservedPositions.begin(); j != reservedPositions.end(); ++j) {
+                std::pair<int, int> localPos = *j;
+                if (localPos.second == i && localPos.first == k) {
+                    verifyNotReserved = false;
+                    std::cout << (board[i][k] && (knightStartingPositionX != i && knightStartingPositionY != k) && verifyNotReserved) << std::endl;
+                }
+            }
+            if (verifyNotReserved) {
+                if (board[i][k] && (knightStartingPositionX != i && knightStartingPositionY != k)) {
+                    positionsToExpand.push({ i, k });
+                    moves.push_back({ {knightStartingPositionY, knightStartingPositionX}, {i, k} });
+                }
             }
         }
     }
@@ -44,17 +87,28 @@ int main()
     while (!positionsToExpand.empty()) {
         std::pair<int, int> tempLocation = positionsToExpand.front();
         positionsToExpand.pop();
+
         //Find moves within current position
         for (int i = tempLocation.first - 2; i <= tempLocation.first + 2; i++) {
             for (int k = tempLocation.second - 2; k <= tempLocation.second + 2; k++) {
                 if (i >= 0 && i < 8 && k >= 0 && k < 8) {
-                    if (isLegal(tempLocation.second, tempLocation.first, k, i) && !board[i][k] && (positionsToExpand.back().first != i && positionsToExpand.back().second != k)) {
-                        board[i][k] = true;
-                        
-                        //each element in moves stores the original position -> new position
-                        moves.push_back({ {tempLocation.first, tempLocation.second}, {i, k} });
-                        positionsToExpand.push({ i, k });
+                    bool verifyNotReserved = true;
+                    for (auto j = reservedPositions.begin(); j != reservedPositions.end(); ++j) {
+                        std::pair<int, int> localPos = *j;
+                        if (localPos.second == i && localPos.first == k) {
+                            verifyNotReserved = false;
+                        }
                     }
+
+                    if (verifyNotReserved) {
+                        if (isLegal(tempLocation.second, tempLocation.first, k, i) && !board[i][k] && verifyNotReserved) {
+                            board[i][k] = true;
+                        
+                            //each element in moves stores the original position -> new position
+                            moves.push_back({ {tempLocation.first, tempLocation.second}, {i, k} });
+                            positionsToExpand.push({ i, k });
+                        }
+                    }   
                 }
             }
         }
@@ -118,11 +172,11 @@ int main()
         std::cout << "PATH: [";
         for (auto localMove = bestPath.begin(); localMove != bestPath.end(); localMove++) {
             std::pair<int, int> move = *localMove;
-            if (move.first != goalPositionY && move.second != goalPositionX) {
-                std::cout << "(" << move.second << "," << move.first << ") -> ";
+            if ((move.second == goalPositionX && move.first == goalPositionY)) {
+                std::cout << "(" << move.second << "," << move.first << ")";
             }
             else {
-                std::cout << "(" << move.second << "," << move.first << ")";
+                std::cout << "(" << move.second << "," << move.first << ") -> ";
             }
         }
         std::cout << "]" << std::endl;
